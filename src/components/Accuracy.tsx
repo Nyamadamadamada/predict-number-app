@@ -1,7 +1,9 @@
-import React from "react";
+type Props = {
+  no: number;
+  content: string;
+}
 
-const Accuracy = props => {
-  const { no, content } = props;
+const Accuracy = ( { no, content }:Props) => {
 
   return (
     <tr>
