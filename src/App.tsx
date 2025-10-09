@@ -1,99 +1,116 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
-import * as tf from '@tensorflow/tfjs';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { InferenceSession, Tensor } from 'onnxruntime-web';
+
 import SignatureCanvas from 'react-signature-canvas';
 import { Button, Heading, Stack } from '@chakra-ui/react';
-import "./App.css";
-import { textUtils } from './utils';
-import * as ort from 'onnxruntime-web/webgpu';
+import './App.css';
+import { mathUtils, runModelUtils, textUtils } from './utils';
+import * as ort from 'onnxruntime-web';
 
-const MODEL_FILEPATH_DEV = "/mnist.onnx";
-
+const MODEL_FILEPATH_DEV = '/mnist.onnx';
+// URL.createObjectURLの抑制のためにシングルスレッドの設定が必須．
+// ref: https://github.com/microsoft/onnxruntime/issues/14445
+ort.env.wasm.numThreads = 1;
 
 const App = () => {
-  const [isLoading, setIsLoading] = useState('is-loading');
-  const [model, setModel] = useState(null);
+  const [model, setModel] = useState<InferenceSession | null>(null);
   const [maxNumber, setMaxNumber] = useState(null);
   const [maxScore, setMaxScore] = useState(null);
 
   const signaturePadRef = useRef(null);
 
-  useEffect(() => {
-    let isMounted = true;
-    
-    (async () => {
-      const loaded = await tf.loadLayersModel(
-        'https://raw.githubusercontent.com/tsu-nera/tfjs-mnist-study/master/model/model.json'
-      );
-      if (isMounted) {
-        setModel(loaded);
-        setIsLoading('');
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  // テンソル化と正規化・推論
-  const getAccuracyScores = useCallback(
-    (imageData) => {
-      if (!model) return [];
-      const scores = tf.tidy(() => {
-        const channels = 1;
-        let input = tf.browser.fromPixels(imageData, channels);
-        input = tf.cast(input, 'float32').div(tf.scalar(255));
-        input = input.expandDims();
-        return model.predict(input).dataSync();
+  // MNISTモデルの読み込み
+  async function loadModel() {
+    try {
+      console.log('モデルをロード中...');
+      const session = await ort.InferenceSession.create(MODEL_FILEPATH_DEV, {
+        executionProviders: ['webgpu', 'webgl', 'wasm'],
       });
-      return scores;
-    },
-    [model]
-  );
+      console.log('OK...');
+      setModel(session);
+    } catch (error) {
+      console.error('読み込みエラー', error);
+      throw error;
+    }
+  }
+
+  useEffect(() => {
+    (async () => {
+      await loadModel();
+    })();
+  }, []);
 
   // 画像の前処理
-  // 28x28のグレースケールに変換
-  const getImageData = useCallback(() => {
-    return new Promise((resolve) => {
-      const context = document.createElement('canvas').getContext('2d');
-      const image = new Image();
-      const width = 28;
-      const height = 28;
+  // 28x28のグレースケールに変換（MNISTは1x28x28、NCHW）
+  const preprocess = (ctx: CanvasRenderingContext2D): Tensor => {
+    const srcCanvas = ctx.canvas as HTMLCanvasElement;
 
-      image.onload = () => {
-        context.drawImage(image, 0, 0, width, height);
-        const imageData = context.getImageData(0, 0, width, height);
+    // 28x28 の縮小キャンバス
+    const scaledCanvas = document.getElementById('input-canvas-scaled') as HTMLCanvasElement;
+    const sctx = scaledCanvas.getContext('2d') as CanvasRenderingContext2D;
 
-        // to grayscale
-        for (let i = 0; i < imageData.data.length; i += 4) {
-          const avg =
-            (imageData.data[i] + imageData.data[i + 1] + imageData.data[i + 2]) / 3;
-          imageData.data[i] = avg;
-          imageData.data[i + 1] = avg;
-          imageData.data[i + 2] = avg;
-        }
-        resolve(imageData);
-      };
+    // 白でクリアしてから元キャンバスを 28x28 に縮小描画
+    sctx.save();
+    sctx.clearRect(0, 0, 28, 28);
+    sctx.drawImage(srcCanvas, 0, 0, srcCanvas.width, srcCanvas.height, 0, 0, 28, 28);
+    sctx.restore();
 
-      image.src = signaturePadRef?.current?.toDataURL();
-    });
-  }, []);
+    // 画素を取得
+    const imageData = sctx.getImageData(0, 0, 28, 28);
+    const { data } = imageData; // RGBA RGBA ...
+
+    // MNIST: 1x28x28 (NCHW)
+    const input = new Float32Array(28 * 28);
+
+    for (let i = 0, j = 0; i < data.length; i += 4, j += 1) {
+      // グレースケール（単純平均でもOKだが一応加重平均にしておく）
+      const r = data[i],
+        g = data[i + 1],
+        b = data[i + 2];
+      const gray = 0.299 * r + 0.587 * g + 0.114 * b; // 0..255
+
+      // 0..1 正規化 & 反転（白背景/黒文字 → 黒背景/白文字）
+      input[j] = 1 - gray / 255;
+    }
+
+    return new Tensor('float32', input, [1, 1, 28, 28]);
+  };
+
+  const postprocess = (rawOutput: Tensor): Float32Array => {
+    return mathUtils.softmax(Array.prototype.slice.call(rawOutput.data));
+  };
+
+  const getPredictedClass = (output: Float32Array) => {
+    if (output.reduce((a, b) => a + b, 0) === 0) {
+      return -1;
+    }
+    return output.reduce((argmax, n, i) => (n > output[argmax] ? i : argmax), 0);
+  };
 
   //　ユーザーが筆を置くと発火
-  const predict = useCallback(() => {
-    getImageData()
-      .then((imageData) => getAccuracyScores(imageData))
-      .then((accuracyScores) => {
-        if (!accuracyScores || accuracyScores.length === 0) return;
-
-        const maxAccuracy = accuracyScores.indexOf(
-          Math.max.apply(null, accuracyScores)
-        );
-
-        setMaxNumber(maxAccuracy);
-        setMaxScore(accuracyScores[maxAccuracy]);
-        console.log(accuracyScores);
-      });
-  }, [getImageData, getAccuracyScores]);
+  const predict = useCallback(async () => {
+    if (!model) {
+      console.log('モデルがロードされていません');
+      return;
+    }
+    const ctx = (document.getElementById('input-canvas') as HTMLCanvasElement).getContext(
+      '2d'
+    ) as CanvasRenderingContext2D;
+    const tensor = preprocess(ctx);
+    let feeds: Record<string, Tensor> = {};
+    feeds[model.inputNames[0]] = tensor;
+    console.log('イメージデータの中身');
+    console.log(tensor);
+    // 推論実行
+    const [res, time] = await runModelUtils.runModel(model, tensor);
+    const output = postprocess(res);
+    const predictedClass = getPredictedClass(output);
+    console.log('結果');
+    console.log(output);
+    console.log('推論時間', time);
+    console.log('予測されたクラス');
+    console.log(predictedClass);
+  }, [model]);
 
   const reset = useCallback(() => {
     setMaxNumber(null);
@@ -104,33 +121,37 @@ const App = () => {
   const predictText = textUtils.getPredictionText(maxNumber, maxScore);
 
   return (
-    <div className={`container stack ${isLoading}`}>
-      <Stack>
+    <>
+      <div className={`container stack `}>
         <Stack>
-          <Heading size="3xl" letterSpacing="tight">
-            {predictText}
-          </Heading>
+          <Stack>
+            <Heading size="3xl" letterSpacing="tight">
+              {predictText}
+            </Heading>
+          </Stack>
+          <div className="canbas">
+            <SignatureCanvas
+              ref={signaturePadRef}
+              minWidth={15}
+              maxWidth={15}
+              penColor="black"
+              backgroundColor="white"
+              canvasProps={{
+                width: 420,
+                height: 420,
+                className: 'sigCanvas',
+                id: 'input-canvas',
+              }}
+              onEnd={predict}
+            />
+            <canvas id="input-canvas-scaled" width="28" height="28" className="none"></canvas>
+          </div>
+          <div className="button">
+            <Button onClick={reset}>reset</Button>
+          </div>
         </Stack>
-        <div className="canbas">
-          <SignatureCanvas
-            ref={signaturePadRef}
-            minWidth={15}
-            maxWidth={15}
-            penColor="white"
-            backgroundColor="black"
-            canvasProps={{
-              width: 420,
-              height: 420,
-              className: 'sigCanvas',
-            }}
-            onEnd={predict}
-          />
-        </div>
-        <div className="button">
-          <Button onClick={reset}>reset</Button>
-        </div>
-      </Stack>
-    </div>
+      </div>
+    </>
   );
 };
 

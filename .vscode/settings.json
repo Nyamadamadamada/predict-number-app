@@ -9,5 +9,5 @@
   // 設定ファイルがプロジェクトのルートディレクトリに存在する場合にのみ動作します。
   "prettier.requireConfig": true,
   // 設定ファイルの名前と場所
-  "prettier.configPath": ".prettierrc.js"
+  "prettier.configPath": ".prettierrc.cjs"
 }
