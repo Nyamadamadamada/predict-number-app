@@ -11,6 +11,15 @@ cd predict-number-app
 npm install
 ```
 
+## デプロイの方法
+
+1. `master`ブランチに最新のコードをまーじ
+2. `npm run build`を実行
+3. push 後にタグをつける
+4. GitHub Workflows が発火し、GitHubPages にデプロイされる
+
+※ タグは`v0.0.1`など始めに`v`をつけること。
+
 ## ⭐️Special Thanks！！
 
 Fork させていただいた Alesion30 さんの記事

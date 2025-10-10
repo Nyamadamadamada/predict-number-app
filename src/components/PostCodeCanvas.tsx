@@ -48,7 +48,7 @@ const PostCodeCanvas = ({ model, digitRefs, setPostCode }: Props) => {
       {/* 1段目: 郵便局画像＋3桁 */}
       <GridItem>
         <Box display="flex" alignItems="center" justifyContent="center" gap={10}>
-          <Image src="/img/post_office_icon.png" alt="郵便局" boxSize="70px" />
+          <Image src="/predict-number-app/img/post_office_icon.png" alt="郵便局" boxSize="70px" />
           <Grid templateColumns="repeat(3, 1fr)" gap={2}>
             {digitRefs.slice(0, 3).map((ref, index) => (
               <PostCodeDigit key={index} index={index} ref={ref} handlePredict={handlePredict} />

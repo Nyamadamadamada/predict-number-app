@@ -1,6 +1,6 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "手書き郵便番号",
+  "name": "手書き郵便番号 あなたの数字は認識できるかな...?",
   "icons": [
     {
       "src": "favicon.ico",

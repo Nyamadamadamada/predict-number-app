@@ -7,7 +7,7 @@ function init() {
   env.wasm.numThreads = 1;
 }
 
-const MODEL_FILEPATH_DEV = '/mnist.onnx';
+const MODEL_FILEPATH_DEV = '/predict-number-app/mnist.onnx';
 
 export async function createModel(): Promise<InferenceSession> {
   init();
