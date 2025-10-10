@@ -1,5 +1,5 @@
 import { Grid, GridItem, Box, Image } from '@chakra-ui/react';
-import { useEffect, useRef, useState, useCallback, MutableRefObject } from 'react';
+import { useCallback } from 'react';
 import { InferenceSession, Tensor } from 'onnxruntime-web';
 import SignatureCanvas from 'react-signature-canvas';
 
@@ -25,7 +25,7 @@ const PostCodeCanvas = ({ model, digitRefs, setPostCode }: Props) => {
       let feeds: Record<string, Tensor> = {};
       feeds[model.inputNames[0]] = tensor;
       // 推論実行
-      const [res, time] = await runModelUtils.runModel(model, tensor);
+      const [res, _] = await runModelUtils.runModel(model, tensor);
       const output = mathUtils.postprocess(res);
       const predictedClass = runModelUtils.getPredictedClass(output);
       console.log('インデックス', canvasId);

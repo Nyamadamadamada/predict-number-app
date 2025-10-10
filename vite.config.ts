@@ -5,6 +5,7 @@ import { viteStaticCopy } from 'vite-plugin-static-copy';
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/predict-number-app/',
   // https://stackoverflow.com/questions/76185469/load-onnx-model-in-browser-cant-find-wasm-file
   assetsInclude: ['**/*.onnx'],
   optimizeDeps: {

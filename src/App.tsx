@@ -2,17 +2,15 @@ import { useEffect, useRef, useState, useCallback, createRef } from 'react';
 import { InferenceSession } from 'onnxruntime-web';
 
 import SignatureCanvas from 'react-signature-canvas';
-import { Heading, Container, Stack, HStack } from '@chakra-ui/react';
-import './App.css';
+import { Heading, Container, Stack } from '@chakra-ui/react';
 import { runModelUtils } from './utils';
 import PostCodeCanvas from './components/PostCodeCanvas';
-import CheckPostCodeButton from './components/CheckPostCodeButton';
 import ContrrolBar from './components/ContrrolBar';
 import { findAddressByZip } from './utils/postcode';
 import { AddressRow } from './type/addresses';
-import AddressResultCard from './components/AddressResultCard';
-import NoAddressFound from './components/NoAddressFound';
 import Futter from './components/Futter';
+import ResultArea from './components/ResultArea';
+import './App.css';
 
 const App = () => {
   const [isCheced, setIsCheced] = useState(false);
@@ -33,17 +31,12 @@ const App = () => {
     })();
   }, []);
 
-  // リセット
-  const reset = useCallback(() => {
-    digitRefs.forEach((ref) => ref.current?.clear());
-    setPostCode([0, 0, 0, 0, 0, 0, 0]);
-    setAddressHit(null);
-    setIsCheced(false);
-  }, [digitRefs]);
-
-  // 郵便番号チェック
+  // 郵便番号が7桁揃ったら住所検索
   const checkPostCode = useCallback(async () => {
-    setIsCheced(false);
+    if (postCode.every((num) => num === 0)) {
+      setAddressHit(null);
+      return;
+    }
     try {
       const zip7 = postCode.join('');
       const hit = await findAddressByZip(zip7);
@@ -52,6 +45,20 @@ const App = () => {
       setIsCheced(true);
     }
   }, [postCode]);
+
+  useEffect(() => {
+    (async () => {
+      await checkPostCode();
+    })();
+  }, [checkPostCode]);
+
+  // リセット
+  const reset = useCallback(() => {
+    digitRefs.forEach((ref) => ref.current?.clear());
+    setPostCode([0, 0, 0, 0, 0, 0, 0]);
+    setAddressHit(null);
+    setIsCheced(false);
+  }, [digitRefs]);
 
   return (
     <Container
@@ -80,13 +87,10 @@ const App = () => {
           <p>モデル読み込み中...</p>
         )}
       </Stack>
-      {/* 郵便番号チェックボタン */}
-      <CheckPostCodeButton onClick={checkPostCode} />
       {/* コントロールバー（下：左にリセット、右に郵便番号表示） */}
       <ContrrolBar postCode={postCode} reset={reset} />
       {/* 検索結果カード */}
-      {isCheced && addressHit && <AddressResultCard addressHit={addressHit} />}
-      {isCheced && !addressHit && <NoAddressFound />}
+      {isCheced && <ResultArea addressHit={addressHit} />}
       {/* フッター */}
       <Futter />
     </Container>

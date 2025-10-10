@@ -34,3 +34,7 @@ https://github.com/Microsoft/onnxruntime-web-demo
 
 https://qiita.com/TaigaMasuda/items/24d85860ffcd724de9eb
 https://pystyle.info/pytorch-cnn-based-classification-model-with-fashion-mnist/
+
+### デプロイの参考
+
+https://zenn.dev/otaki0413/articles/react-deploy-github-pages

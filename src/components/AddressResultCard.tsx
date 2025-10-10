@@ -1,6 +1,6 @@
 // src/components/AddressResultCard.tsx
 import { AddressRow } from '@/type/addresses';
-import { Box, Flex, HStack, Badge, Text, Tooltip, Code, useClipboard, Button } from '@chakra-ui/react';
+import { Box, HStack, Badge, Text, useClipboard, Button } from '@chakra-ui/react';
 import { Copy, MapPin, Check } from 'lucide-react';
 
 type Props = {
