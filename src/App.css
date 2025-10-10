@@ -1,20 +1,6 @@
-.container {
-  margin-top: 50px;
-  margin-bottom: 120px;
-  text-align: center;
+:root {
+  background-color: #d71b27;
 }
-
-.canbas {
-  display: inline;
-  border: solid 1px red;
-}
-
-.button {
-  display: block;
-  margin-top: 20px;
-  margin-bottom: 20px;
-}
-
 .table {
   display: inline;
   border-collapse: collapse;

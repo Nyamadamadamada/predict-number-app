@@ -1,3 +1,5 @@
+import { Tensor } from 'onnxruntime-web';
+
 export function softmax(arr: number[]): any {
   const C = Math.max(...arr);
   const d = arr.map((y) => Math.exp(y - C)).reduce((a, b) => a + b);
@@ -20,13 +22,13 @@ export function getMidpoint(p1: number[], p2: number[]): number[] {
  * e.g., canvas. Accounts for touch events as well as mouse events.
  */
 export function getCoordinates(e: any) {
-  let {clientX, clientY} = e;
+  let { clientX, clientY } = e;
   // for touch event
   if (e.touches && e.touches.length) {
     clientX = e.touches[0].clientX;
     clientY = e.touches[0].clientY;
   }
-  const {left, top} = e.target.getBoundingClientRect();
+  const { left, top } = e.target.getBoundingClientRect();
   const [x, y] = [clientX - left, clientY - top];
   return [x, y];
 }
@@ -37,7 +39,7 @@ export function getCoordinates(e: any) {
  * @returns {ImageData}
  */
 export function centerCrop(imageData: ImageData) {
-  const {data, width, height} = imageData;
+  const { data, width, height } = imageData;
   let [xmin, ymin] = [width, height];
   let [xmax, ymax] = [-1, -1];
   for (let i = 0; i < width; i++) {
@@ -97,3 +99,8 @@ export function centerCrop(imageData: ImageData) {
 
   return new ImageData(dataNew, widthNew, heightNew);
 }
+
+// 結果の後処理（活性化関数）
+export const postprocess = (rawOutput: Tensor): Float32Array => {
+  return softmax(Array.prototype.slice.call(rawOutput.data));
+};
