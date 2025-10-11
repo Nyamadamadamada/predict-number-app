@@ -1,6 +1,9 @@
-# DEMO
+# 手書き郵便番号 あなたの数字は認識できるかな...?
+
+<img src="./output.gif" width="40%" />
 
 ##　概要
+
 郵便番号を手入力し、該当地域を表示します。
 
 ## 環境構築
@@ -19,6 +22,12 @@ npm install
 4. GitHub Workflows が発火し、GitHubPages にデプロイされる
 
 ※ タグは`v0.0.1`など始めに`v`をつけること。
+
+```bash
+# タグの例
+git tag -a v0.0.2 -m "画像を表示されるように" HEAD
+git push origin --tags
+```
 
 ## ⭐️Special Thanks！！
 
