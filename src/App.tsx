@@ -72,7 +72,13 @@ const App = () => {
       marginY={10}
       paddingTop={10}
     >
-      <Stack display={'flex'} flexDirection={'row'} alignItems="center" marginTop="20px" marginBottom="20px">
+      <Stack
+        display={'flex'}
+        flexDirection={{ base: 'column', md: 'row' }}
+        alignItems="center"
+        marginTop={{ base: 10, md: 10 }}
+        marginBottom={{ base: 4, md: 10 }}
+      >
         <Heading size="3xl" letterSpacing="tight">
           手書き郵便番号
         </Heading>

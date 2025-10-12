@@ -7,30 +7,13 @@ function init() {
   env.wasm.numThreads = 1;
 }
 
-const MODEL_FILEPATH_DEV = '/predict-number-app/mnist.onnx';
+const MODEL_FILEPATH_DEV = '/predict-number-app/model.fp32.onnx';
 
 export async function createModel(): Promise<InferenceSession> {
   init();
-  return await await InferenceSession.create(MODEL_FILEPATH_DEV, {
+  return await InferenceSession.create(MODEL_FILEPATH_DEV, {
     executionProviders: ['webgpu', 'webgl', 'wasm'],
   });
-}
-
-export async function warmupModel(model: InferenceSession, dims: number[]) {
-  // OK. we generate a random input and call Session.run() as a warmup query
-  const size = dims.reduce((a, b) => a * b);
-  const warmupTensor = new Tensor('float32', new Float32Array(size), dims);
-
-  for (let i = 0; i < size; i++) {
-    warmupTensor.data[i] = Math.random() * 2.0 - 1.0; // random value [-1.0, 1.0)
-  }
-  try {
-    const feeds: Record<string, Tensor> = {};
-    feeds[model.inputNames[0]] = warmupTensor;
-    await model.run(feeds);
-  } catch (e) {
-    console.error(e);
-  }
 }
 
 export async function runModel(model: InferenceSession, preprocessedData: Tensor): Promise<[Tensor, number]> {
@@ -71,7 +54,6 @@ export const preprocess = (ctx: CanvasRenderingContext2D, sctx: CanvasRenderingC
 
   // 白でクリアしてから元キャンバスを 28x28 に縮小描画
   sctx.save();
-  sctx.clearRect(0, 0, 28, 28);
   sctx.drawImage(srcCanvas, 0, 0, srcCanvas.width, srcCanvas.height, 0, 0, 28, 28);
   sctx.restore();
 

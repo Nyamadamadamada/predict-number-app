@@ -1,4 +1,4 @@
-import { Grid, GridItem, Box, Image } from '@chakra-ui/react';
+import { Grid, GridItem, Box, Image, Center, SimpleGrid } from '@chakra-ui/react';
 import { useCallback } from 'react';
 import { InferenceSession, Tensor } from 'onnxruntime-web';
 import SignatureCanvas from 'react-signature-canvas';
@@ -28,8 +28,6 @@ const PostCodeCanvas = ({ model, digitRefs, setPostCode }: Props) => {
       const [res, _] = await runModelUtils.runModel(model, tensor);
       const output = mathUtils.postprocess(res);
       const predictedClass = runModelUtils.getPredictedClass(output);
-      console.log('インデックス', canvasId);
-      console.log('予測されたクラス', predictedClass);
       if (predictedClass === null) {
         console.log('予測に失敗しました');
         return;
@@ -44,31 +42,51 @@ const PostCodeCanvas = ({ model, digitRefs, setPostCode }: Props) => {
   );
 
   return (
-    <Grid templateRows="auto auto auto" gap={4} height="100%">
+    <Grid
+      templateRows="auto auto auto"
+      gap={{ base: 3, md: 4 }}
+      h="100%"
+      p={{ base: 0, md: 4 }}
+      maxW="container.sm"
+      mx="auto"
+      as="section"
+      aria-label="郵便番号入力"
+    >
       {/* 1段目: 郵便局画像＋3桁 */}
       <GridItem>
-        <Box display="flex" alignItems="center" justifyContent="center" gap={10}>
-          <Image src="/predict-number-app/img/post_office_icon.png" alt="郵便局" boxSize="70px" />
-          <Grid templateColumns="repeat(3, 1fr)" gap={2}>
-            {digitRefs.slice(0, 3).map((ref, index) => (
-              <PostCodeDigit key={index} index={index} ref={ref} handlePredict={handlePredict} />
-            ))}
-          </Grid>
+        <Box display="flex" alignItems="center" justifyContent="center" gap={{ base: 3, md: 8 }} flexWrap="nowrap">
+          <Image
+            src="/predict-number-app/img/post_office_icon.png"
+            alt="郵便局"
+            boxSize={{ base: '48px', md: '70px' }}
+            flexShrink={0}
+          />
+          <Box as="div" role="group" aria-label="郵便番号 上3桁">
+            <SimpleGrid columns={3} gap={{ base: 1, md: 3 }}>
+              {digitRefs.slice(0, 3).map((ref, index) => (
+                <PostCodeDigit key={index} index={index} ref={ref} handlePredict={handlePredict} />
+              ))}
+            </SimpleGrid>
+          </Box>
         </Box>
       </GridItem>
 
       {/* 2段目: ハイフン */}
-      <GridItem textAlign="center" fontSize="2xl" fontWeight="bold">
-        -
+      <GridItem>
+        <Center fontSize={{ base: 'xl', md: '2xl' }} fontWeight="bold" lineHeight="1" aria-hidden="true">
+          -
+        </Center>
       </GridItem>
 
       {/* 3段目: 4桁 */}
       <GridItem>
-        <Grid templateColumns="repeat(4, 1fr)" gap={2}>
-          {digitRefs.slice(3).map((ref, index) => (
-            <PostCodeDigit key={index + 3} index={index + 3} ref={ref} handlePredict={handlePredict} />
-          ))}
-        </Grid>
+        <Box as="div" role="group" aria-label="郵便番号 下4桁">
+          <SimpleGrid columns={4} gap={{ base: 1, md: 3 }}>
+            {digitRefs.slice(3).map((ref, index) => (
+              <PostCodeDigit key={index + 3} index={index + 3} ref={ref} handlePredict={handlePredict} />
+            ))}
+          </SimpleGrid>
+        </Box>
       </GridItem>
     </Grid>
   );
